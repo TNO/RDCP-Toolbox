@@ -1,0 +1,7 @@
+Questionnaire name	Questionnaire title	Item enableWhen (optional)	Item enableWhen behaviour (optional, default is any)	Item type	Item name (optional)	Item text	Item options	Item option values (optional)	Item required	Item placeholder (optional)	Item min value (optional)	Item max value (optional)	Item sublabel (optional)
+daily-questionnaire-demo	Dagelijkse vragenlijst (demo)			slider	slaapkwaliteit	Hoe voelde de kwaliteit van je slaap?	1 Slechtst mogelijk|2|3|4|5|6|7 Best mogelijk	1|2|3|4|5|6|7	TRUE
+daily-questionnaire-demo	Dagelijkse vragenlijst (demo)			slider	uitgerust_gevoel	Voelde je je uitgerust toen je vanochtend wakker werd?	1 Totaal niet|2|3|4|5|6|7 Extreem	1|2|3|4|5|6|7	TRUE
+daily-questionnaire-demo	Dagelijkse vragenlijst (demo)			slider	algemeen_stres_gevoel_vandaag	Hoe gestrest voel je je over het algemeen vandaag?	1 Totaal niet|2|3|4|5|6|7 Extreem	1|2|3|4|5|6|7	TRUE
+daily-questionnaire-demo	Dagelijkse vragenlijst (demo)			integer	alcoholische_dranken_gisteren	Gisteren alcoholische dranken heb je gisteren gedronken?			TRUE
+Dagelijkse vragenlijst (demo)	Dagelijkse vragenlijst (demo)			radio-button	stemming_momenteel	Hoe zou je je stemming op dit moment omschrijven?	Heel goed|Goed|Neutraal|Slecht|Heel slecht		TRUE
+Dagelijkse vragenlijst (demo)	Dagelijkse vragenlijst (demo)	[{"targetQuestionRelativeIndex": -1, "value": "Heel goed", "operator": "="},{"targetQuestionText": "Hoe zou je je stemming op dit moment omschrijven?", "value": "Goed", "operator": "="}]	all	string	goede_stemming_reden	Waarom denk je dat je stemming zo goed is?			TRUE

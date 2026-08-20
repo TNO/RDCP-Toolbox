@@ -1,0 +1,6 @@
+Participant (name or email)	Start date (yyyy-MM-dd or firstLogin)	Task type	Taks title	Taks days from start date (number)	Taks availability start time (HH:mm)	Taks availability duration (min)	Taks push notification (Y/N)	Taks email notification (Y/N)	Taks push reminder #1 offset (min)	Taks push reminder #1 (Y/N)	Taks email reminder #1 (Y/N)	Taks push reminder #2 offset (min)	Taks push reminder #2 (Y/N)	Taks email reminder #2 (Y/N)	Taks push reminder #3 offset (min)	Taks push reminder #3 (Y/N)	Taks email reminder #3 (Y/N)	Participant timezone
+Ferry Jagers	2025-09-30	questionnaire	Lange slaapapneu vragenlijst	0	18:00	2160	Y	N	120	Y	N	180	Y	N	1080	Y	N	Europe/Amsterdam
+Ferry Jagers	firstLogin	questionnaire	Dagelijkse vragenlijst	1	06:00	1080	Y	N	60	Y	N	180	Y	N	300	Y	N	Europe/Amsterdam
+Ferry Jagers	firstLogin	questionnaire	Dagelijkse vragenlijst	2	06:00	1080	Y	N	60	Y	N	180	Y	N	300	Y	N	Europe/Amsterdam
+Ferry Jagers	firstLogin	questionnaire	Dagelijkse vragenlijst	3	06:00	1080	Y	N	60	Y	N	180	Y	N	300	Y	N	Europe/Amsterdam
+Ferry Jagers	firstLogin	questionnaire	Dagelijkse vragenlijst	4	06:00	1080	Y	N	60	Y	N	180	Y	N	300	Y	N	Europe/Amsterdam
