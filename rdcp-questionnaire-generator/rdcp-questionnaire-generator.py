@@ -367,7 +367,7 @@ for filename in os.listdir(input_folder_path):
 
         for name, questionnaire in questionnaire_map.items():
 
-            with open(f"./output/{filename_without_extension}_{name.lower()}.json", 'w') as json_file:
+            with open(f"./output/{filename_without_extension}_{name.lower()}.json", 'w') as output_file:
 
                 questionnaire_json_string = ""
 
@@ -376,4 +376,6 @@ for filename in os.listdir(input_folder_path):
                 else:
                     questionnaire_json_string = json.dumps(questionnaire['fhir'])
 
-                json_file.write(questionnaire_json_string)
+                output_file.write(questionnaire_json_string)
+
+            output_file.close()

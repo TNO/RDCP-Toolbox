@@ -1,10 +1,11 @@
 # RDCP Toolbox - Questionnaire responses export
 # This script retrieves questionnaire responses for a specified study and outputs them to a TSV file.
-import json
-
 import rdcp_utils
 import rdcp_script_utils
+
 import os
+import json
+from datetime import datetime
 
 if not os.path.exists('output'):
     os.makedirs('output')
@@ -72,9 +73,20 @@ for item in response['items']:
 
 if option_input == "1":
 
-    with open(f"./output/{study_id}-questionnaires.tsv", 'w') as json_file:
+    timestamp = datetime.now().strftime("%Y%m%d%H%M")
 
-        json_file.write("User name\tUser info\tTimestamp\tQuestionnaire title\tQuestion label\tQuestion answer\n")
+    with open(f"./output/{timestamp}-{rdcp_script_utils.get_study_name_by_study_id(study_id)}-questionnaires.tsv", 'w') as output_file:
+
+        header_list = [
+            "User name",
+            "User info",
+            "Timestamp",
+            "Questionnaire title",
+            "Question label",
+            "Question answer"
+        ]
+
+        output_file.write(f"{'\t'.join(header_list)}\n")
 
         response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", f"/study/{study_id}/experiments", { "order": "desc", "sortBy": "createdAt", "studyId": study_id, "type": "questionnaire", "limit": 999999999999999999 } )
 
@@ -124,23 +136,34 @@ if option_input == "1":
 
                         timestamp = adjust_experiment_timestamp(answer['timestamp'], item)
 
-                        if export_with_ids:
-                            formatted_questionnaire_title = f"{questionnaire_title} ({item['result']['questionnaireId']})" if item['result']['questionnaireId'] else questionnaire_title
-                            formatted_question_label = f"{result_label} ({answer['questionId']})" if answer['questionId'] else result_label
-                            json_file.write(f"{participant_id}\t{username} ({item['userId']})\t{timestamp}\t{formatted_questionnaire_title}\t{formatted_question_label}\t{value}\n")
-                        else:
-                            json_file.write(f"{participant_id}\t{username}\t{timestamp}\t{questionnaire_title}\t{result_label}\t{value}\n")
+                        line_list = [
+                            participant_id,
+                            f"{username} ({item['userId']})" if export_with_ids else username,
+                            timestamp,
+                            f"{questionnaire_title} ({item['result']['questionnaireId']})" if export_with_ids and item['result']['questionnaireId'] else questionnaire_title,
+                            f"{result_label} ({answer['questionId']})" if export_with_ids and answer['questionId'] else result_label,
+                            value
+                        ]
+
+                        output_file.write(f"{'\t'.join(line_list)}\n")
 
                     if export_submit_timestamp:
 
                         question_label = "Questionnaire submission timestamp"
                         timestamp = adjust_experiment_timestamp(item['createdAt'], item)
 
-                        if export_with_ids:
-                            formatted_questionnaire_title = f"{questionnaire_title} ({item['result']['questionnaireId']})" if item['result']['questionnaireId'] else questionnaire_title
-                            json_file.write(f"{participant_id}\t{username} ({item['userId']})\t{timestamp}\t{formatted_questionnaire_title}\t{question_label}\t{timestamp}\n")
-                        else:
-                            json_file.write(f"{participant_id}\t{username}\t{timestamp}\t{questionnaire_title}\t{question_label}\t{timestamp}\n")
+                        line_list = [
+                            participant_id,
+                            f"{username} ({item['userId']})" if export_with_ids else username,
+                            timestamp,
+                            f"{questionnaire_title} ({item['result']['questionnaireId']})" if export_with_ids and item['result']['questionnaireId'] else questionnaire_title,
+                            question_label,
+                            timestamp
+                        ]
+
+                        output_file.write(f"{'\t'.join(line_list)}\n")
+
+    output_file.close()
 
 elif option_input == "2":
 

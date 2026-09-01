@@ -3,9 +3,11 @@
 
 import rdcp_utils
 import rdcp_script_utils
+
 import json
 import re
 import os
+from datetime import datetime
 
 study_ids = []
 
@@ -56,7 +58,10 @@ header_list = [
     "Last sync date"
 ]
 
-output_file = open(f"./output/{'-'.join(study_ids) if len(study_ids) > 0 else 'specific-participants'}_wearable_summary.tsv", 'w')
+timestamp = datetime.now().strftime("%Y%m%d%H%M")
+study_names = [rdcp_script_utils.get_study_name_by_study_id(study_id) for study_id in study_ids]
+
+output_file = open(f"./output/{timestamp}_{'-'.join(study_names) if len(study_names) > 0 else 'specific-participants'}_wearable_summary.tsv", 'w')
 output_file.write(f"{'\t'.join(header_list)}\n")
 
 if not os.path.exists('./output/BYOD'):

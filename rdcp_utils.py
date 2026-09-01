@@ -10,8 +10,6 @@ def api_call( api_token, base_url, method, endpoint, request_params=None, reques
     if request_data is None:
         request_data = {}
 
-
-
     request_headers = {
         'Authority': 'gateway.krane.one',
         'Accept': 'application/json',
@@ -41,7 +39,7 @@ def api_call( api_token, base_url, method, endpoint, request_params=None, reques
 
     return response_json
 
-def study_id_from_study_title( api_token, base_url, study_title):
+def get_study_id_by_study_title( api_token, base_url, study_title):
 
     study_id = None
 

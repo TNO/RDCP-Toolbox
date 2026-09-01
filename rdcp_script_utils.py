@@ -94,3 +94,27 @@ def id_input(id_type, confirmation_needed = False):
             result_id = None
 
     return result_id
+
+def get_study_name_by_study_id( study_id ):
+
+    study_name = None
+
+    try:
+        with open(_root_path('id-dictionary.json'), 'r') as file:
+
+            file_content = file.read().strip()
+
+            if not file_content:
+                raise ValueError
+
+            id_dict = json.loads(file_content)
+
+    except (FileNotFoundError, ValueError):
+        id_dict = {"study": {}}
+
+    for alias, id in id_dict["study"].items():
+
+        if id == study_id and ( study_name == None or len(study_name) < len(alias) ):
+            study_name = alias
+
+    return study_name.lower() if study_name else None

@@ -3,8 +3,8 @@ import rdcp_script_utils
 
 study_id = '6a5505f91861960014e88fc1'
 
-participant_ids = ['6a83072faac6d21297e26bdc', '6a8307324c86ebd445746b65']
-workflow_month_day = '08-17'
+participant_ids = []
+workflow_month_day = '08-28'
 
 workflow_start_date = f'2026-{workflow_month_day}T06:00:00'
 workflow_end_date = f'2030-{workflow_month_day}T06:00:00.000Z'
