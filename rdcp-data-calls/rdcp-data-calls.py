@@ -45,14 +45,10 @@ else:
         print("ERROR: Wrong input")
     exit()
 
-participant_map = {}
-participants = rdcp_utils.get_all_participants( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), study_id )
+participant_dict = rdcp_utils.get_all_participants_as_dict( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), study_id )
 
-for participant in participants:
-    participant_map[participant['id']] = participant
-
-questionnaire_title_map = {}
-questionnaire_questions_map = {}
+questionnaire_title_dict = {}
+questionnaire_questions_dict = {}
 response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", "/questionnaire", { "order": "desc", "studies": study_id, "showAllPreviousVersions": True } )
 
 if not response or not response['items']:
@@ -63,13 +59,13 @@ for item in response['items']:
 
     questionnaire_id = item['_id']
 
-    if questionnaire_id not in questionnaire_questions_map:
-        questionnaire_questions_map[questionnaire_id] = {}
+    if questionnaire_id not in questionnaire_questions_dict:
+        questionnaire_questions_dict[questionnaire_id] = {}
 
     for questionObject in item['questionObjects']:
-        questionnaire_questions_map[questionnaire_id][questionObject['_id']] = { "label": questionObject['question'][next(iter(questionObject['question']))] }
+        questionnaire_questions_dict[questionnaire_id][questionObject['_id']] = { "label": questionObject['question'][next(iter(questionObject['question']))] }
 
-    questionnaire_title_map[questionnaire_id] = item['title'][next(iter(item['title']))]
+    questionnaire_title_dict[questionnaire_id] = item['title'][next(iter(item['title']))]
 
 if option_input == "1":
 
@@ -100,28 +96,28 @@ if option_input == "1":
 
                 else:
 
-                    if item['userId'] not in participant_map:
+                    if item['userId'] not in participant_dict:
                         print(f"WARNING: Participant '{item['userId']}' not found.")
                         continue
 
-                    if item['result']['questionnaireId'] not in questionnaire_questions_map:
-                        print(f"WARNING: Questionnaire '{item['result']['questionnaireId']}' for user '{participant_map[item['userId']]['email']}' not found, probably removed from study.")
+                    if item['result']['questionnaireId'] not in questionnaire_questions_dict:
+                        print(f"WARNING: Questionnaire '{item['result']['questionnaireId']}' for user '{participant_dict[item['userId']]['email']}' not found, probably removed from study.")
                         continue
 
-                    questionnaire_title = questionnaire_title_map[item['result']['questionnaireId']]
-                    participant_id = participant_map[item['userId']]['patientId']
+                    questionnaire_title = questionnaire_title_dict[item['result']['questionnaireId']]
+                    participant_id = participant_dict[item['userId']]['patientId']
                     if export_email_instead_of_firstname:
-                        username = participant_map[item['userId']]['email']
+                        username = participant_dict[item['userId']]['email']
                     else:
-                        username = participant_map[item['userId']]['firstname']
+                        username = participant_dict[item['userId']]['firstname']
 
                     for answer in item['result']['answers']:
 
-                        if answer['questionId'] not in questionnaire_questions_map[item['result']['questionnaireId']]:
-                            print(f"WARNING: Question '{answer['questionId']}' for user '{participant_map[item['userId']]['email']}' not found, probably removed from questionnaire.")
+                        if answer['questionId'] not in questionnaire_questions_dict[item['result']['questionnaireId']]:
+                            print(f"WARNING: Question '{answer['questionId']}' for user '{participant_dict[item['userId']]['email']}' not found, probably removed from questionnaire.")
                             continue
 
-                        result_label = questionnaire_questions_map[item['result']['questionnaireId']][answer['questionId']]['label']
+                        result_label = questionnaire_questions_dict[item['result']['questionnaireId']][answer['questionId']]['label']
 
                         if '\n' in result_label:
                             result_label = result_label.replace('\n','')
@@ -167,30 +163,30 @@ if option_input == "1":
 
 elif option_input == "2":
 
-    monitoring_map = {}
+    monitoring_dict = {}
 
     response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(),"GET", f"/study/{study_id}/experiments", { "order": "desc", "sortBy": "createdAt", "studyId": study_id, "type": "questionnaire", "limit": 999999999999999999 } )
 
     for item in response.get('items', []):
 
-        participant_id = participant_map[item['userId']]['patientId']
+        participant_id = participant_dict[item['userId']]['patientId']
         timestamp = adjust_experiment_timestamp(item['createdAt'], item, False)
 
-        if participant_id not in monitoring_map:
-            monitoring_map[participant_id] = { "first": timestamp, "last": timestamp }
+        if participant_id not in monitoring_dict:
+            monitoring_dict[participant_id] = { "first": timestamp, "last": timestamp }
         else:
-            if timestamp < monitoring_map[participant_id]['first']:
-                monitoring_map[participant_id]['first'] = timestamp
+            if timestamp < monitoring_dict[participant_id]['first']:
+                monitoring_dict[participant_id]['first'] = timestamp
 
-            if timestamp > monitoring_map[participant_id]['last']:
-                monitoring_map[participant_id]['last'] = timestamp
+            if timestamp > monitoring_dict[participant_id]['last']:
+                monitoring_dict[participant_id]['last'] = timestamp
 
     # Cast timestamps to string for JSON serialization
-    for participant_id in monitoring_map:
-        monitoring_map[participant_id]['first'] = monitoring_map[participant_id]['first'].isoformat(timespec="seconds")
-        monitoring_map[participant_id]['last'] = monitoring_map[participant_id]['last'].isoformat(timespec="seconds")
+    for participant_id in monitoring_dict:
+        monitoring_dict[participant_id]['first'] = monitoring_dict[participant_id]['first'].isoformat(timespec="seconds")
+        monitoring_dict[participant_id]['last'] = monitoring_dict[participant_id]['last'].isoformat(timespec="seconds")
 
-    print(json.dumps(monitoring_map, indent=4))
+    print(json.dumps(monitoring_dict, indent=4))
 
 
 

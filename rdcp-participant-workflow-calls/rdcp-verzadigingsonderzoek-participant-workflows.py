@@ -4,7 +4,7 @@ import rdcp_script_utils
 study_id = '6a5505f91861960014e88fc1'
 
 participant_ids = []
-workflow_month_day = '08-28'
+workflow_month_day = '09-02' ## MM-dd
 
 workflow_start_date = f'2026-{workflow_month_day}T06:00:00'
 workflow_end_date = f'2030-{workflow_month_day}T06:00:00.000Z'
@@ -31,7 +31,7 @@ followup_questionnaires = [
     { "eventDuration": 30, "delay": 4    },
 ]
 
-questionnaire_map = {}
+questionnaire_dict = {}
 
 response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", "/questionnaire", { "order": "desc", "studies": study_id, "showAllPreviousVersions": True } )
 
@@ -40,7 +40,7 @@ if not response or not response['items']:
     exit()
 
 for item in response['items']:
-    questionnaire_map[item['title']['nl_NL']] = item['_id']
+    questionnaire_dict[item['title']['nl_NL']] = item['_id']
 
 def make_start_schedule(participant_id, q, workflow_start_date, study_id):
     return {
@@ -129,7 +129,7 @@ for participant_id in participant_ids:
             else:
                 label += f' opvolging {index}/10'
 
-            fq['id'] = questionnaire_map[label]
+            fq['id'] = questionnaire_dict[label]
 
             schedules.append(make_followup_schedule(participant_id, sq, fq, workflow_start_date, study_id))
 

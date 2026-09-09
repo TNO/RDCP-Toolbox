@@ -29,7 +29,7 @@ else:
 
 if option_input == "1":
 
-    schedule_map = {}
+    schedule_dict = {}
 
     response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(),"GET", f"/user/patients", { "projectId": study_id } )
 
@@ -87,19 +87,17 @@ if option_input == "1":
 
                 # Sort active schedules by start time
                 active_schedules.sort(key=lambda x: x['startTime'])
-                schedule_map[participant['_id']] = { "firstname": participant.get('firstname', 'NA'), "lastname": participant.get('lastname', 'NA'), "schedules": active_schedules }
+                schedule_dict[participant['_id']] = { "firstname": participant.get('firstname', 'NA'), "lastname": participant.get('lastname', 'NA'), "schedules": active_schedules }
 
 elif option_input in ["2","3"]:
 
-    schedule_map = {}
+    schedule_dict = {}
 
     if option_input == "2":
 
         input_folder_path = "input"
 
-        experiment_configuration_map = {}
-        participant_id_map = {}
-        participant_startdate_map = {}
+        experiment_configuration_dict = {}
 
         response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(),"GET", f"/study/{study_id}" )
 
@@ -111,14 +109,14 @@ elif option_input in ["2","3"]:
 
             if item['type'] == 'questionnaire':
 
-                experiment_configuration_map[item['biomarkerDescription']] = {
+                experiment_configuration_dict[item['biomarkerDescription']] = {
                     'experimentType': item['type'],
                     'featureId': item['featureId']
                 }
 
             elif item['type'] == 'multiMetric':
 
-                experiment_configuration_map[item['configuration']['name']] = {
+                experiment_configuration_dict[item['configuration']['name']] = {
                     'experimentType': item['type'],
                     'name': item['configuration']['name'],
                     'description': item['configuration']['description'],
@@ -128,19 +126,22 @@ elif option_input in ["2","3"]:
                     'dataSources': item['configuration']['dataSources']
                 }
 
-        participant_map = {}
+        participant_dict = {}
+        participant_id_dict = {}
+        participant_startdate_dict = {}
+
         participants = rdcp_utils.get_all_participants( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url() )
 
         for participant in participants:
 
-            participant_map[participant['id']] = participant
+            participant_dict[participant['id']] = participant
 
             if study_id in participant['studies']:
 
-                participant_id_map[f"{participant['email']}".lower()] = participant['id']
+                participant_id_dict[f"{participant['email']}".lower()] = participant['id']
 
                 if 'firstname' in participant and 'lastname' in participant:
-                    participant_id_map[f"{participant['firstname']} {participant['lastname']}".lower()] = participant['id']
+                    participant_id_dict[f"{participant['firstname']} {participant['lastname']}".lower()] = participant['id']
                 else:
                     print(f"WARNING: nameless participant found: {participant['email']}")
 
@@ -184,7 +185,7 @@ elif option_input in ["2","3"]:
                                 task_reminder_3_email = split[17].strip().lower()
                                 participant_timezone = split[18].strip()
 
-                                if not name_or_email or name_or_email not in participant_id_map:
+                                if not name_or_email or name_or_email not in participant_id_dict:
                                     print(f"ERROR: participant '{name_or_email}' on line {i} not found in the participant map.")
                                     continue
 
@@ -192,7 +193,7 @@ elif option_input in ["2","3"]:
                                     print(f"ERROR: task type on line {i} not (yet) supported, only 'questionnaire' tasks supported.")
                                     continue
 
-                                if task_title not in experiment_configuration_map:
+                                if task_title not in experiment_configuration_dict:
                                     print(f"ERROR: experiment title '{task_title}' on line {i} not found in the questionnaire map.")
                                     continue
 
@@ -204,11 +205,11 @@ elif option_input in ["2","3"]:
                                     print(f"ERROR: participant timezone not set on line {i}.")
                                     continue
 
-                                participant_id = participant_id_map[name_or_email]
+                                participant_id = participant_id_dict[name_or_email]
 
                                 if start_date_string.lower() == 'firstlogin':
 
-                                    if participant_id not in participant_startdate_map:
+                                    if participant_id not in participant_startdate_dict:
                                         response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(),"GET", f"/patient/{participant_id}" )
 
                                     anonymized_data_usage = next((item for item in response['consents'] if item["policyName"] == "AnonymizedDataUsage"), None)
@@ -217,9 +218,9 @@ elif option_input in ["2","3"]:
 
                                     if anonymized_data_usage:
                                         start_date_string_from_consent = anonymized_data_usage['createdAt'].split('T')[0]
-                                        participant_startdate_map[participant_id] = start_date_string_from_consent
+                                        participant_startdate_dict[participant_id] = start_date_string_from_consent
 
-                                    start_date_string = participant_startdate_map[participant_id]
+                                    start_date_string = participant_startdate_dict[participant_id]
 
                                 if start_date_string is None:
                                     print(f"ERROR: start date could not be determined for line {i}.")
@@ -260,7 +261,7 @@ elif option_input in ["2","3"]:
                                 workflow_json['projectId'] = study_id
                                 workflow_json['eventDuration'] = task_availability_duration
 
-                                workflow_json['action']['configuration'] = experiment_configuration_map[task_title]
+                                workflow_json['action']['configuration'] = experiment_configuration_dict[task_title]
 
                                 workflow_json['startOn']['startDatetime'] = date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
                                 workflow_json['seriesStartDatetime'] = date.strftime("%Y-%m-%dT%H:%M:%S.000Z")
@@ -294,15 +295,15 @@ elif option_input in ["2","3"]:
                                 if reminders:
                                     workflow_json['reminders'] = reminders
 
-                                if participant_id not in schedule_map:
-                                    schedule_map[participant_id] = {"schedules":[]}
+                                if participant_id not in schedule_dict:
+                                    schedule_dict[participant_id] = {"schedules":[]}
 
-                                schedule_map[participant_id]['schedules'].append(workflow_json)
+                                schedule_dict[participant_id]['schedules'].append(workflow_json)
 
     else:
-        schedule_map[participant_id] = {"schedules":[]}
+        schedule_dict[participant_id] = {"schedules":[]}
 
-    for user_id, schedules in schedule_map.items():
+    for user_id, schedules in schedule_dict.items():
         # print(json.dumps(schedules, indent=4))
         response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "PATCH", f"/user/{user_id}", None, schedules )
         print(f"{user_id} -> {json.dumps(response)}")

@@ -6,11 +6,8 @@ import rdcp_script_utils
 study_id = '6a5505f91861960014e88fc1'
 project_slug = 'verzadigingsonderzoek'
 
-existing_participant_email_map = {}
 participants = rdcp_utils.get_all_participants( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url() )
-
-for participant in participants:
-    existing_participant_email_map[participant['email'].lower()] = participant['id']
+existing_participant_email_dict = { p['email'].lower(): p['id'] for p in participants }
 
 participant_ids = []
 
@@ -24,7 +21,7 @@ with open('input/verzadigingsonderzoek-enrollment.tsv', "r") as workflow_file:
 
             email = split[0].strip().lower()
 
-            if email not in existing_participant_email_map:
+            if email not in existing_participant_email_dict:
 
                 name = split[1].strip()
 

@@ -118,6 +118,63 @@ def get_all_participants( api_token, base_url, study_id=None, created_after_stri
 
     return participants
 
+def get_all_participants_as_dict( api_token, base_url, study_id=None, created_after_string=None, created_before_string=None ):
+
+    participants = get_all_participants( api_token, base_url, study_id, created_after_string, created_before_string )
+
+    return { p['id']: p for p in participants }
+
+def get_all_health_records( api_token, base_url, participant_id, param, start_date = None, end_date = None, page_limit= 10000 ):
+
+    response_records = []
+    total_count = 1
+    metadata = None
+
+    request_params = { "user_id": participant_id, "limit": page_limit }
+
+    if start_date:
+        request_params['start_date'] = start_date
+    if end_date:
+        request_params['end_date'] = end_date
+
+    while len(response_records) < total_count:
+
+        if len(response_records) > 0:
+            request_params['skip'] = len(response_records)
+
+        response = api_call(
+            api_token,
+            base_url,
+            "GET",
+            f"/health/{param}",
+            request_params
+        )
+
+        if not response:
+            return None
+
+        records = response['records']
+        page_metadata = response['metadata']
+        metadata = page_metadata
+        total_count = page_metadata['total_count']
+
+        if len(records) == 0:
+            break
+
+        response_records.extend(records)
+
+        print(f"  - Calling API for '{param}' records...{len(response_records)}/{total_count} records fetched so far")
+
+    if metadata is None:
+        metadata = { 'count': 0, 'total_count': 0 }
+
+    metadata['count'] = len(response_records)
+
+    return {
+        'records': response_records,
+        'metadata': metadata
+    }
+
 def requests_to_curl( method, url, headers=None, params=None, data=None ):
     # Start building the curl command
     curl_command = f'curl -X {method} "{url}"'

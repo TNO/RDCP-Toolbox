@@ -162,7 +162,7 @@ for filename in os.listdir(input_folder_path):
 
         with open(file_path, "r") as questionnaire_file:
 
-            questionnaire_map = {}
+            questionnaire_dict = {}
             questionnaire_link_ids = []
 
             for i, line in enumerate(questionnaire_file):
@@ -182,7 +182,7 @@ for filename in os.listdir(input_folder_path):
                     item_text = get_line_value_for_header( split, headers, 'Item text' )
                     item_type = get_line_value_for_header( split, headers, 'Item type' )
 
-                    if questionnaire_name not in questionnaire_map:
+                    if questionnaire_name not in questionnaire_dict:
 
                         questionnaire_json = json.loads(questionnaire_source_json)
 
@@ -194,7 +194,7 @@ for filename in os.listdir(input_folder_path):
                         questionnaire_json['fhir']['title'] = questionnaire_title
                         # questionnaire_json['fhir']['id'] = str(uuid.uuid5(uuid_namespace, questionnaire_title))
                         questionnaire_json['fhir']['name'] = questionnaire_name
-                        questionnaire_map[questionnaire_name] = questionnaire_json
+                        questionnaire_dict[questionnaire_name] = questionnaire_json
 
                     if questionnaire_name is None or questionnaire_title is None or item_text is None or item_type is None:
                         print(f"ERROR: Invalid item on line {i+1}")
@@ -203,12 +203,12 @@ for filename in os.listdir(input_folder_path):
                     item_required = get_line_value_for_header( split, headers, 'Item required' )
                     item_text = item_text.replace("\\n", "\n")
 
-                    question_index = len(questionnaire_map[questionnaire_name]['fhir']['item'])
+                    question_index = len(questionnaire_dict[questionnaire_name]['fhir']['item'])
 
                     if item_name is None:
 
                         item_name_index = 0
-                        existing_item_names = {q['linkId'] for q in questionnaire_map[questionnaire_name]['fhir']['item']}
+                        existing_item_names = {q['linkId'] for q in questionnaire_dict[questionnaire_name]['fhir']['item']}
                         base_name = re.sub(r'[^a-zA-Z0-9_-]', '', item_text.replace(' ', '_')).strip().lower() or "item"
 
                         while item_name is None or item_name in existing_item_names:
@@ -222,7 +222,7 @@ for filename in os.listdir(input_folder_path):
 
                         # item_uuid = None
                         # item_name_index = 0
-                        # existing_item_names = [q['linkId'] for q in questionnaire_map[questionnaire_name]['fhir']['item']]
+                        # existing_item_names = [q['linkId'] for q in questionnaire_dict[questionnaire_name]['fhir']['item']]
                         #
                         # while (item_name is None or item_uuid is None) or f"{item_name}-{item_uuid}" in existing_item_names:
                         #
@@ -313,14 +313,14 @@ for filename in os.listdir(input_folder_path):
 
                             if 'targetQuestionRelativeIndex' in condition:
 
-                                target_question = questionnaire_map[questionnaire_name]['fhir']['item'][question_index+condition['targetQuestionRelativeIndex']]
+                                target_question = questionnaire_dict[questionnaire_name]['fhir']['item'][question_index+condition['targetQuestionRelativeIndex']]
 
                             elif 'targetQuestionText' in condition:
 
                                 try:
 
                                     matches = [
-                                        q for q in questionnaire_map[questionnaire_name]['fhir']['item']
+                                        q for q in questionnaire_dict[questionnaire_name]['fhir']['item']
                                         if q.get("text") == condition['targetQuestionText']
                                     ]
 
@@ -360,12 +360,12 @@ for filename in os.listdir(input_folder_path):
 
                     if item_json['linkId'] not in questionnaire_link_ids:
                         questionnaire_link_ids.append(item_json['linkId'])
-                        questionnaire_map[questionnaire_name]['fhir']['item'].append(item_json)
+                        questionnaire_dict[questionnaire_name]['fhir']['item'].append(item_json)
 
                     else:
                         print(f"ERROR linkId for question {i} must be unique!")
 
-        for name, questionnaire in questionnaire_map.items():
+        for name, questionnaire in questionnaire_dict.items():
 
             with open(f"./output/{filename_without_extension}_{name.lower()}.json", 'w') as output_file:
 
