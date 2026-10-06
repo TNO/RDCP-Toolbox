@@ -336,19 +336,26 @@ for filename in os.listdir(input_folder_path):
 
                             if target_question is not None:
 
-                                target_option = next(
-                                    option for option in target_question['answerOption']
-                                    if option['valueCoding'].get('display') == condition['value']
-                                )
+                                try:
 
-                                item_json['enableWhen'].append({
-                                    "question": target_question['linkId'],
-                                    "operator": condition['operator'],
-                                    "answerCoding": {
-                                        "system": target_option['valueCoding']['system'],
-                                        "code": target_option['valueCoding']['code']
-                                    }
-                                })
+                                    target_option = next(
+                                        option for option in target_question['answerOption']
+                                        if option['valueCoding'].get('display') == condition['value']
+                                    )
+
+                                except KeyError:
+                                    print(f"ERROR: condition value '{condition['value']}' cannot be found in target question options for line #{i+1}.")
+
+                                if target_option is not None:
+
+                                    item_json['enableWhen'].append({
+                                        "question": target_question['linkId'],
+                                        "operator": condition['operator'],
+                                        "answerCoding": {
+                                            "system": target_option['valueCoding']['system'],
+                                            "code": target_option['valueCoding']['code']
+                                        }
+                                    })
 
                             else:
                                 print(f"ERROR: enableWhen on line #{i+1} cannot be set.")

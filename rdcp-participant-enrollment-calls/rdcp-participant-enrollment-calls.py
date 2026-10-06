@@ -1,17 +1,19 @@
 # RDCP Toolbox - Participant enrollment calls
 # This script enrolls participants from a TSV file.
+import json
+
 import rdcp_utils
 import rdcp_script_utils
 
-study_id = '6a5505f91861960014e88fc1'
-project_slug = 'verzadigingsonderzoek'
+study_id = '6ab97a197ab7660014bc1480'
+project_slug = 'gut-health-vezelstudie'
 
 participants = rdcp_utils.get_all_participants( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url() )
 existing_participant_email_dict = { p['email'].lower(): p['id'] for p in participants }
 
 participant_ids = []
 
-with open('input/verzadigingsonderzoek-enrollment.tsv', "r") as workflow_file:
+with open('input/gut-health-vezelstudie-enrollment.tsv', "r") as workflow_file:
 
     for i, line in enumerate(workflow_file):
 
@@ -39,7 +41,15 @@ with open('input/verzadigingsonderzoek-enrollment.tsv', "r") as workflow_file:
                     participant_ids.append(response['_id'])
 
             else:
-                print(f"Participant '{email}' already exists in study {study_id}")
+
+                participant = next((p for p in participants if p['id'] == existing_participant_email_dict[email]), None)
+
+                if study_id not in participant.get('studies', []):
+                    print(f"Participant '{email}' already exists in other study")
+                else:
+                    print(f"Participant '{email}' already exists in this study")
+
+
 
 print(f"{len(participant_ids)} participants to activate:")
 print(participant_ids)

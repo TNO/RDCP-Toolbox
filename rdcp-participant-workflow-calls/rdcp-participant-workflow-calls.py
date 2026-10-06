@@ -13,17 +13,17 @@ now = datetime.datetime.now(datetime.timezone.utc)
 if not os.path.exists('input'):
     os.makedirs('input')
 
-option_input = input("Do you want to:\n(1) Get all active participant workflows for study\n(2) Overwrite participant workflows from file to study\n(3) Delete all workflows for participant\n(4) Exit\n\nYour input: ").strip().lower()
+option_input = input("Do you want to:\n(1) Get all active participant workflows for study\n(2) Overwrite participant workflows from file to study\n(3) Get all workflows for participant\n(4) Delete all workflows for participant\n(5) Exit\n\nYour input: ").strip().lower()
 
 study_id = None
 participant_id = None
 
-if option_input == "3":
-    participant_id = rdcp_script_utils.id_input('participant',True)
+if option_input in ["3","4"]:
+    participant_id = rdcp_script_utils.id_input('participant', option_input == "4")
 elif option_input in ["1","2"]:
     study_id = rdcp_script_utils.id_input('study')
 else:
-    if option_input != "4":
+    if option_input != "5":
         print("ERROR: Wrong input")
     exit()
 
@@ -89,7 +89,7 @@ if option_input == "1":
                 active_schedules.sort(key=lambda x: x['startTime'])
                 schedule_dict[participant['_id']] = { "firstname": participant.get('firstname', 'NA'), "lastname": participant.get('lastname', 'NA'), "schedules": active_schedules }
 
-elif option_input in ["2","3"]:
+elif option_input in ["2","3","4"]:
 
     schedule_dict = {}
 
@@ -299,6 +299,16 @@ elif option_input in ["2","3"]:
                                     schedule_dict[participant_id] = {"schedules":[]}
 
                                 schedule_dict[participant_id]['schedules'].append(workflow_json)
+
+    elif option_input == "3":
+
+        response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(),"GET", f"/patient/{participant_id}" )
+
+        if not response:
+            print("ERROR: GET user call failed")
+            exit()
+
+        print(json.dumps(response['schedules'], indent=4))
 
     else:
         schedule_dict[participant_id] = {"schedules":[]}

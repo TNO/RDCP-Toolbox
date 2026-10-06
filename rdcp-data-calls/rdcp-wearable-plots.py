@@ -24,11 +24,13 @@ params = [
     "resting_heartrate",
     "heartrate_variability_rmssd",
     "heartrate_variability_sdnn",
-    "sleep",
+    "sleep"
 ]
 
 participant_ids = []
-# participant_ids = ['6a5601790c5fe0562dbac338']
+# participant_ids = [
+#     '6aad201e490da8b6f6323513'
+# ]
 
 if len(participant_ids) > 0:
     print(f"Filtering BYOD JSON files for participant IDs: {', '.join(participant_ids)}")
@@ -163,7 +165,7 @@ for index, (participant_id, param_dict) in enumerate(series.items(), start=1):
     ax.xaxis.set_major_locator(mdates.DayLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     ax.grid(True, axis="x", alpha=0.25)
-    ax.set_title(f"Participant {participant_id} wearable timeseries")
+    ax.set_title(f"Wearable data availability for participant '{participant_id}' of study '{study_id}'")
     ax.set_xlabel("Date")
     ax.set_ylabel("Parameter")
     plt.setp(ax.get_xticklabels(), rotation=30, ha="right")

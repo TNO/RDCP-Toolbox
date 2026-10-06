@@ -51,7 +51,7 @@ questionnaire_title_dict = {}
 questionnaire_questions_dict = {}
 response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", "/questionnaire", { "order": "desc", "studies": study_id, "showAllPreviousVersions": True } )
 
-if not response or not response['items']:
+if not response or 'items' not in response:
     print("ERROR: GET questionnaire call failed")
     exit()
 
@@ -82,7 +82,7 @@ if option_input == "1":
             "Question answer"
         ]
 
-        output_file.write(f"{'\t'.join(header_list)}\n")
+        output_file.write("\t".join(header_list) + "\n")
 
         response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", f"/study/{study_id}/experiments", { "order": "desc", "sortBy": "createdAt", "studyId": study_id, "type": "questionnaire", "limit": 999999999999999999 } )
 
@@ -141,7 +141,7 @@ if option_input == "1":
                             value
                         ]
 
-                        output_file.write(f"{'\t'.join(line_list)}\n")
+                        output_file.write("\t".join(line_list) + "\n")
 
                     if export_submit_timestamp:
 
@@ -157,7 +157,7 @@ if option_input == "1":
                             timestamp
                         ]
 
-                        output_file.write(f"{'\t'.join(line_list)}\n")
+                        output_file.write("\t".join(line_list) + "\n")
 
     output_file.close()
 
@@ -187,8 +187,3 @@ elif option_input == "2":
         monitoring_dict[participant_id]['last'] = monitoring_dict[participant_id]['last'].isoformat(timespec="seconds")
 
     print(json.dumps(monitoring_dict, indent=4))
-
-
-
-
-

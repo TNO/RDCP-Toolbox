@@ -124,23 +124,25 @@ def get_all_participants_as_dict( api_token, base_url, study_id=None, created_af
 
     return { p['id']: p for p in participants }
 
-def get_all_health_records( api_token, base_url, participant_id, param, start_date = None, end_date = None, page_limit= 10000 ):
+def get_all_health_records( api_token, base_url, participant_id, param, start_date = None, end_date = None, page_limit= 5000 ):
 
     response_records = []
-    total_count = 1
-    metadata = None
+    total_count = None
+    metadata = { 'count': 0, 'total_count': 0 }
 
     request_params = { "user_id": participant_id, "limit": page_limit }
 
     if start_date:
-        request_params['start_date'] = start_date
+        request_params['start_date'] = start_date+'T00:00:00Z'
     if end_date:
-        request_params['end_date'] = end_date
+        request_params['end_date'] = end_date+'T23:59:59Z'
 
-    while len(response_records) < total_count:
+    next_timestamp = None
 
-        if len(response_records) > 0:
-            request_params['skip'] = len(response_records)
+    while total_count is None or len(response_records) < total_count:
+
+        if next_timestamp and len(response_records) > 0:
+            request_params['start_date'] = next_timestamp
 
         response = api_call(
             api_token,
@@ -154,19 +156,15 @@ def get_all_health_records( api_token, base_url, participant_id, param, start_da
             return None
 
         records = response['records']
-        page_metadata = response['metadata']
-        metadata = page_metadata
-        total_count = page_metadata['total_count']
+        next_timestamp = response['metadata']['next_timestamp']
 
-        if len(records) == 0:
-            break
+        if total_count is None:
+            total_count = response['metadata']['total_count']
+            metadata['total_count'] = total_count
 
         response_records.extend(records)
 
-        print(f"  - Calling API for '{param}' records...{len(response_records)}/{total_count} records fetched so far")
-
-    if metadata is None:
-        metadata = { 'count': 0, 'total_count': 0 }
+        print(f"  - Fetched {len(response_records)}/{total_count} '{param}' records")
 
     metadata['count'] = len(response_records)
 

@@ -3,8 +3,8 @@ import rdcp_script_utils
 
 study_id = '6a5505f91861960014e88fc1'
 
-participant_ids = []
-workflow_month_day = '09-02' ## MM-dd
+participant_ids = ['6ab22968bd77d42c2207db18']
+workflow_month_day = '09-22' ## MM-dd
 
 workflow_start_date = f'2026-{workflow_month_day}T06:00:00'
 workflow_end_date = f'2030-{workflow_month_day}T06:00:00.000Z'
@@ -42,12 +42,12 @@ if not response or not response['items']:
 for item in response['items']:
     questionnaire_dict[item['title']['nl_NL']] = item['_id']
 
-def make_start_schedule(participant_id, q, workflow_start_date, study_id):
+def make_start_schedule(participant_id, sq, workflow_start_date, study_id):
     return {
         "projectId": study_id,
         "userId": participant_id,
         "active": True,
-        "eventDuration": q['eventDuration'],
+        "eventDuration": sq['eventDuration'],
         "reminders": [],
         "startOn": {
             "event": "StartDate",
@@ -60,7 +60,7 @@ def make_start_schedule(participant_id, q, workflow_start_date, study_id):
         "action": {
             "configuration": {
                 "experimentType": "questionnaire",
-                "featureId": q['id']
+                "featureId": sq['id']
             },
             "scheduleAction": "CreateExperimentTask",
             "expireAction": "ExpireExperimentTask",
@@ -71,12 +71,12 @@ def make_start_schedule(participant_id, q, workflow_start_date, study_id):
         }
     }
 
-def make_followup_schedule(participant_id, sq, q_followup, workflow_start_date, study_id):
+def make_followup_schedule(participant_id, sq, fq, workflow_start_date, study_id):
     return {
         "projectId": study_id,
         "userId": participant_id,
         "active": False,
-        "eventDuration": q_followup['eventDuration'],
+        "eventDuration": fq['eventDuration'],
         "reminders": [{"timeOffset": 3, "channels": ["push"]}],
         "startOn": {
             "event": "ExperimentCompleted",
@@ -85,7 +85,7 @@ def make_followup_schedule(participant_id, sq, q_followup, workflow_start_date, 
                 "featureId": sq['id'],
                 "conditionScript": "function evaluate(user, results) {\n  return true\n}",
                 "delay": {
-                    "delayDuration": q_followup['delay'],
+                    "delayDuration": fq['delay'],
                     "durationUnit": "hour"
                 }
             }
@@ -97,7 +97,7 @@ def make_followup_schedule(participant_id, sq, q_followup, workflow_start_date, 
         "action": {
             "configuration": {
                 "experimentType": "questionnaire",
-                "featureId": q_followup['id']
+                "featureId": fq['id']
             },
             "scheduleAction": "CreateExperimentTask",
             "expireAction": "ExpireExperimentTask",

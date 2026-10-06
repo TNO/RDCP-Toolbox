@@ -10,20 +10,22 @@ import os
 from datetime import datetime
 
 params = ['stepcount','heartrate','resting_heartrate','heartrate_variability_rmssd','heartrate_variability_sdnn','sleep']
+# params = []
 # params = ['stepcount','heartrate']
-# params = ['stepcount']
 # params = ['stepcount','heartrate_variability_rmssd','heartrate_variability_sdnn']
 
-start_date = None  # Start date for fetching health records
-end_date = None  # End date for fetching health records
+start_date = None  # Start date for fetching health records (yyyy-MM-dd)
+end_date = None  # End date for fetching health records (yyyy-MM-dd)
 
-start_date = '2026-08-06T00:00:00Z' # IBDigital start date
-# start_date = '2026-07-30T00:00:00Z' # Biobank start date
+start_date = '2026-08-06' # IBDigital start date
+# start_date = '2026-07-30' # Biobank start date
 
 study_ids = []
 
-participant_ids = [
-]
+participant_ids = []
+# participant_ids = [
+#     '6a904d59cf55a50d8157c6bc'
+# ]
 
 exclude_participant_ids = [
 ]
@@ -61,13 +63,16 @@ timestamp = datetime.now().strftime("%Y%m%d%H%M")
 study_names = [rdcp_script_utils.get_study_name_by_study_id(study_id) for study_id in study_ids]
 
 output_file = open(f"./output/{timestamp}_{'-'.join(study_names) if len(study_names) > 0 else 'specific-participants'}_wearable_summary.tsv", 'w')
-output_file.write(f"{'\t'.join(header_list)}\n")
+output_file.write("\t".join(header_list) + "\n")
 
 if not os.path.exists('./output/BYOD'):
     os.makedirs('./output/BYOD')
 
 if 'heartrate_variability_rmssd' not in params and 'heartrate_variability_sdnn' not in params:
     print("NOTE: HRV data will not be fetched because 'heartrate_variability_rmssd' and 'heartrate_variability_sdnn' are not in the params list")
+
+if start_date or end_date:
+    print(f"NOTE: Data retrieval is limited {'from ' + start_date if start_date else ''}{' ' if start_date and end_date else ''}{'until ' + end_date if end_date else ''}")
 
 for participant_id in participant_ids:
 
@@ -85,7 +90,7 @@ for participant_id in participant_ids:
     first_measurment_date = None
     last_measurement_date = None
 
-    response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", f"/patient/{participant_id}/experiments" )
+    response = rdcp_utils.api_call( rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url(), "GET", f"/patient/{participant_id}/experiments", { "limit": 1000 } )
 
     if response:
 
@@ -220,6 +225,6 @@ for participant_id in participant_ids:
         last_measurement_date.isoformat(timespec="seconds") if last_measurement_date else ''
     ]
 
-    output_file.write(f"{'\t'.join(line_list)}\n")
+    output_file.write("\t".join(line_list) + "\n")
 
 output_file.close()
