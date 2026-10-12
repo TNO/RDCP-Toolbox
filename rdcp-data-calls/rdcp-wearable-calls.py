@@ -24,11 +24,17 @@ study_ids = []
 
 participant_ids = []
 # participant_ids = [
-#     '6a904d59cf55a50d8157c6bc'
+# '6ac60547b4c60f046786aef5'
 # ]
 
 exclude_participant_ids = [
 ]
+
+if len(participant_ids) > 0:
+    print(f"Filtering BYOD JSON files for participant IDs: {', '.join(participant_ids)}")
+
+if len(exclude_participant_ids) > 0:
+    print(f"Filtering out BYOD JSON files for participant IDs: {', '.join(exclude_participant_ids)}")
 
 if (len(participant_ids) == 0 and len(study_ids) == 0):
     study_id = rdcp_script_utils.id_input('study')
@@ -157,7 +163,7 @@ for participant_id in participant_ids:
             elif param == 'stepcount':
                 break
 
-            # print(f"Successfully fetched {response['metadata']['count']}/{response['metadata']['total_count']} '{param}' data entries for participant '{participant_id}', latest measurement: {last_record_time}, HRV: {has_hrv_data}")
+            print(f"Successfully fetched {response['metadata']['count']}/{response['metadata']['total_count']} '{param}' data entries for participant '{participant_id}', latest measurement: {last_record_time}")
 
             with open(f"./output/BYOD/{participant_dict[participant_id]['studies'][0] if participant_dict[participant_id]['studies'] and len(participant_dict[participant_id]['studies']) == 1 else 'UNDETERMINED'}_{participant_id}_{param}.json", 'w') as f:
                 f.write(json.dumps(response, indent=4))
@@ -190,6 +196,8 @@ for participant_id in participant_ids:
                 source_label = 'Polar'
             elif source['app'] and source['app'].startswith('com.ouraring.oura'):
                 source_label = 'Oura'
+            elif source['app'] and source['app'].startswith('com.xiaomi.wearable'):
+                source_label = 'Xiaomi'
             elif source['app'] and source['app'].startswith('com.coros.coros'):
                 source_label = 'Coros'
             elif source['app'] and source['app'].startswith('com.sports-tracker.suunto'):

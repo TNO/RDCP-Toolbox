@@ -1,5 +1,6 @@
 # RDCP Toolbox - Participant info calls
 # This script generates timeseries data availability plots for each participant based on 'wearable-calls' output files.
+# When participant_ids is not empty, it will only do so for the listed participant IDs. Otherwise, it will generate plots for all participants found in the 'wearable-calls' output files.
 
 import json
 import os
@@ -29,7 +30,7 @@ params = [
 
 participant_ids = []
 # participant_ids = [
-#     '6aad201e490da8b6f6323513'
+#     '6ac60547b4c60f046786aef5'
 # ]
 
 if len(participant_ids) > 0:

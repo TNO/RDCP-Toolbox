@@ -72,7 +72,7 @@ def open_question( item_name, item_type, text, placeholder=None, min=None, max=N
 
     open_question_json = {}
 
-    if item_type in ['string', 'integer', 'date']:
+    if item_type in ['string', 'integer', 'decimal', 'date']:
 
         open_question_json = json.loads( open_question_source_json )
         open_question_json = set_general_properties_for_item( open_question_json, item_name )
@@ -251,7 +251,7 @@ for filename in os.listdir(input_folder_path):
                         item_json = set_general_properties_for_item( item_json, item_name )
                         item_json['text'] = item_text
 
-                    elif item_type in ['string', 'integer', 'date']:
+                    elif item_type in ['string', 'integer', 'decimal', 'date']:
 
                         placeholder = get_line_value_for_header( split, headers, 'Item placeholder (optional)' )
                         min = get_line_value_for_header( split, headers, 'Item min (optional)' )

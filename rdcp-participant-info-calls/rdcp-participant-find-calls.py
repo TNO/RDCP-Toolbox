@@ -8,14 +8,6 @@ participant_ids = []
 
 for participant in participants:
 
-    if participant['firstname'].endswith('045'):
-        print( participant['email'] )
-        print( json.dumps(participant, indent=4) )
-        # participant_ids.append(participant['id'])
-
-    # if 'ferry' in participant['firstname'].lower() and 'jagers' in participant['lastname'].lower():
-    #     print( participant['email'] )
-    #     print( json.dumps(participant, indent=4) )
-    #     participant_ids.append(participant['id'])
-
-# print('["'+'", "'.join(participant_ids)+'"]')
+    if participant['firstname'].endswith('086'):
+        print( f"{participant['email']} -> {participant['id']}" )
+        # print( json.dumps(participant, indent=4) )

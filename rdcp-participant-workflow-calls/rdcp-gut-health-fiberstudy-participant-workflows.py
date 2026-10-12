@@ -4,7 +4,7 @@ import json
 
 study_id = '6ab97a197ab7660014bc1480'
 
-participant_ids = ['6abd59fe8feb0b5b407407cc']
+participant_ids = []
 
 workflow_start_date = '2026-10-01T04:00:00.000Z'
 workflow_end_date = '2030-10-01T04:00:00.000Z'

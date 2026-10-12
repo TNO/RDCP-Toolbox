@@ -1,9 +1,9 @@
+import json
+import requests
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-import requests
-import json
 
-def api_call( api_token, base_url, method, endpoint, request_params=None, request_data=None ):
+def api_call(api_token, base_url, method, endpoint, request_params=None, request_data=None):
 
     if request_params is None:
         request_params = {}
@@ -24,7 +24,15 @@ def api_call( api_token, base_url, method, endpoint, request_params=None, reques
 
         # print(requests_to_curl(method, url, request_headers, request_params, request_data))
 
-        response = requests.request(method, url, headers=request_headers, params=request_params, json=request_data)
+        response = requests.request(
+            method,
+            url,
+            headers=request_headers,
+            params=request_params,
+            json=request_data,
+            timeout=(5, 30),
+        )
+
         response.raise_for_status()
 
     except requests.RequestException as e:
@@ -45,11 +53,11 @@ def get_study_id_by_study_title( api_token, base_url, study_title):
 
     response = api_call( api_token, base_url, "GET", "/study", {'order': 'desc'})
 
-    if not response:
+    if not response or not isinstance(response, list):
         print("ERROR: Study call failed")
         return None
 
-    study = next((item for item in response if item["title"].lower() == study_title.lower()), None )
+    study = next((item for item in response if item['title'].lower() == study_title.lower()), None)
 
     if study:
         study_id = study['_id']
@@ -62,73 +70,94 @@ def get_participant( api_token, base_url, participant_id ):
 
     response = api_call( api_token, base_url, "GET", f"/patient/{participant_id}" )
 
-    if not response:
+    if not response or not isinstance(response, dict):
         print(f"ERROR: Participant call failed for participant ID '{participant_id}'")
         return None
 
-    if response['status'] not in ['Active', 'Invited', 'Expired']:
+    if not response['status'] or response['status'] not in ['Active', 'Invited', 'Expired']:
         print(f"WARNING: Unknown participant status: {response['status']}")
 
     return format_participant_info(response)
 
-def get_all_participants( api_token, base_url, study_id=None, created_after_string=None, created_before_string=None ):
+def get_all_participants(api_token, base_url, study_id=None, created_after_string=None, created_before_string=None):
 
     participants = []
-    total_count = 1
+    participant_ids = set()
+    total_count = None
+    page_size = 1000
 
-    while len(participants) < total_count:
+    while total_count is None or len(participants) < total_count:
 
-        try:
-            response = api_call( api_token, base_url, "GET", "/organization/patients", { "order": "desc", "skip": len(participants), "limit": 1000 } )
+        response = api_call(api_token, base_url, "GET", "/organization/patients", {"order": "desc", "skip": len(participants), "limit": page_size})
 
-        except requests.RequestException as e:
-            print(f"ERROR: {e}")
+        if not isinstance(response, dict) or not isinstance(response['items'], list) or not isinstance(response['totalCount'], int):
+            return None
 
-        if not response or not response['items']:
-            return []
+        if total_count is None:
+            total_count = response['totalCount']
 
-        total_count = response['totalCount']
+        if not isinstance(total_count, int):
+            return None
 
-        for item in response['items']:
+        page_items = response['items']
+
+        required_fields = {
+            "_id", "status", "email", "patientId", "studies", "invitedAt", "createdAt"
+        }
+
+        for item in page_items:
+
+            if not isinstance(item, dict) or not required_fields.issubset(item):
+                return None
+            if item['_id'] in participant_ids:
+                return None
+
+            participant_ids.add(item['_id'])
 
             if item['status'] not in ['Active', 'Invited', 'Expired']:
                 print(f"WARNING: Unknown participant status: {item['status']}")
 
-            participants.append(format_participant_info(item))
+            participants.append(item)
+
+        if len(participants) > total_count:
+            return None
 
     if study_id:
-        participants = [p for p in participants if study_id in p['studies']]
 
-    if created_after_string or created_before_string:
-        timezone_info = ZoneInfo('Europe/Amsterdam')
-        current_time = datetime.now(timezone.utc)
-        current_time_in_timezone = current_time.astimezone(timezone_info)
-        utc_offset = current_time_in_timezone.utcoffset()
-        utc_offset_str = f"{utc_offset.total_seconds() / 3600:+03.0f}:{abs(utc_offset.total_seconds() / 60) % 60:02.0f}"
+        participants = [
+            p for p in participants if study_id in p['studies']
+        ]
 
-        if created_after_string:
-            participants = [p for p in participants if p['createdAt'] >= datetime.fromisoformat(f"{created_after_string}:00{utc_offset_str}")]
+        if created_after_string or created_before_string:
 
-        if created_before_string:
-            participants = [p for p in participants if p['createdAt'] <= datetime.fromisoformat(f"{created_before_string}:00{utc_offset_str}")]
+            timezone_info = ZoneInfo('Europe/Amsterdam')
+            current_time = datetime.now(timezone.utc)
+            current_time_in_timezone = current_time.astimezone(timezone_info)
+            utc_offset = current_time_in_timezone.utcoffset()
+            utc_offset_str = f"{utc_offset.total_seconds() / 3600:+03.0f}:{abs(utc_offset.total_seconds() / 60) % 60:02.0f}"
 
-    for participant in participants:
-        participant['createdAt'] = participant['createdAt'].isoformat(timespec="minutes")
-        participant['invitedAt'] = participant['invitedAt'].isoformat(timespec="minutes")
+            if created_after_string:
+                participants = [p for p in participants if p['createdAt'] >= datetime.fromisoformat(f"{created_after_string}:00{utc_offset_str}")]
 
-    return participants
+            if created_before_string:
+                participants = [p for p in participants if p['createdAt'] <= datetime.fromisoformat(f"{created_before_string}:00{utc_offset_str}")]
 
-def get_all_participants_as_dict( api_token, base_url, study_id=None, created_after_string=None, created_before_string=None ):
+    return [format_participant_info(p) for p in participants]
 
-    participants = get_all_participants( api_token, base_url, study_id, created_after_string, created_before_string )
+def get_all_participants_as_dict(api_token, base_url, study_id=None, created_after_string=None, created_before_string=None):
+
+    participants = get_all_participants(api_token, base_url, study_id, created_after_string, created_before_string)
+
+    if participants is None:
+        return None
 
     return { p['id']: p for p in participants }
 
-def get_all_health_records( api_token, base_url, participant_id, param, start_date = None, end_date = None, page_limit= 5000 ):
 
-    response_records = []
+def get_all_health_records(api_token, base_url, participant_id, param, start_date=None, end_date=None, page_limit=5000):
+
+    result_records = []
     total_count = None
-    metadata = { 'count': 0, 'total_count': 0 }
 
     request_params = { "user_id": participant_id, "limit": page_limit }
 
@@ -138,10 +167,11 @@ def get_all_health_records( api_token, base_url, participant_id, param, start_da
         request_params['end_date'] = end_date+'T23:59:59Z'
 
     next_timestamp = None
+    current_cursor = request_params['start_date']
 
-    while total_count is None or len(response_records) < total_count:
+    while total_count is None or len(result_records) < total_count:
 
-        if next_timestamp and len(response_records) > 0:
+        if next_timestamp:
             request_params['start_date'] = next_timestamp
 
         response = api_call(
@@ -152,43 +182,53 @@ def get_all_health_records( api_token, base_url, participant_id, param, start_da
             request_params
         )
 
-        if not response:
+        if not isinstance(response, dict) or not isinstance(response['records'], list) or not isinstance(response['metadata'], dict):
             return None
-
-        records = response['records']
-        next_timestamp = response['metadata']['next_timestamp']
 
         if total_count is None:
             total_count = response['metadata']['total_count']
-            metadata['total_count'] = total_count
 
-        response_records.extend(records)
+        if not isinstance(total_count, int):
+            return None
 
-        print(f"  - Fetched {len(response_records)}/{total_count} '{param}' records")
+        records = response['records']
 
-    metadata['count'] = len(response_records)
+        # if len(result_records) + len(records) < total_count and not records:
+        #     return None
+        # if len(result_records) + len(records) > total_count:
+        #     return None
+
+        result_records.extend(records)
+
+        if len(result_records) < total_count:
+
+            next_timestamp = response['metadata']['next_timestamp']
+
+            if not next_timestamp or not isinstance(next_timestamp, str):
+                return None
+
+            if next_timestamp == current_cursor:
+                return None
+
+            current_cursor = next_timestamp
 
     return {
-        'records': response_records,
-        'metadata': metadata
+        'records': result_records,
+        'metadata': { 'count': len(result_records), 'total_count': total_count if total_count is not None else 0 }
     }
 
 def requests_to_curl( method, url, headers=None, params=None, data=None ):
-    # Start building the curl command
+
     curl_command = f'curl -X {method} "{url}"'
 
-    # Add headers to curl command
     if headers:
         for key, value in headers.items():
             curl_command += f' -H "{key}: {value}"'
 
-    # Add URL parameters if present
     if params:
         param_str = '&'.join([f"{key}={value}" for key, value in params.items()])
-        # If params are present, append them to the URL
         curl_command = curl_command.replace(f'"{url}"', f'"{url}?{param_str}"')
 
-    # Add data (body) if present
     if data:
         if isinstance(data, dict):
             data = json.dumps(data)
@@ -197,41 +237,64 @@ def requests_to_curl( method, url, headers=None, params=None, data=None ):
     return curl_command
 
 def has_admin_rights( user ):
-    return 'OrganizationAdmin' in user['https://krane.one/roles']
+    return bool(user) and "https://krane.one/roles" in user and 'OrganizationAdmin' in user['https://krane.one/roles']
 
 def is_participant( user ):
-    return True
+    return bool(user) and "https://krane.one/roles" in user and 'Patient' in user['https://krane.one/roles']
 
-def adjust_timestamp( timestamp, timezone_name, return_as_string=True ):
+def adjust_timestamp(timestamp, timezone_name, return_as_string=True):
 
-    if not isinstance(timestamp, str):
-        print(f"WARNING: Invalid timestamp format: {timestamp}, returning original timestamp.")
-        return timestamp
+    if not timestamp or not isinstance(timestamp, str):
+        print("ERROR: Invalid timestamp provided.")
+        return None
+
+    if not timezone_name or not isinstance(timezone_name, str):
+        print("ERROR: Invalid timezone name provided.")
+        return None
 
     normalized_timestamp = timestamp.replace("Z", "+00:00")
 
     try:
         timezone_info = ZoneInfo(timezone_name)
         parsed_timestamp = datetime.fromisoformat(normalized_timestamp)
-    except (ZoneInfoNotFoundError, ValueError):
-        print(f"WARNING: Invalid timestamp '{timestamp}' or timezone '{timezone_name}', returning original timestamp.")
-        return timestamp
+    except (ZoneInfoNotFoundError, ValueError) as error:
+        print(f"ERROR: Invalid timestamp {timestamp!r} or timezone {timezone_name!r}")
+        return None
 
     if parsed_timestamp.tzinfo is None:
         parsed_timestamp = parsed_timestamp.replace(tzinfo=timezone.utc)
 
     adjusted_timestamp = parsed_timestamp.astimezone(timezone_info)
 
-    if return_as_string == True:
+    if return_as_string:
+        timespec = "milliseconds" if "." in timestamp else "seconds"
+        return adjusted_timestamp.isoformat(timespec=timespec)
+    else:
+        return adjusted_timestamp
 
-        if "." in timestamp:
-            adjusted_timestamp =  adjusted_timestamp.isoformat(timespec="milliseconds")
-        else:
-            adjusted_timestamp =  adjusted_timestamp.isoformat(timespec="seconds")
+def adjust_experiment_timestamp(timestamp, experiment, return_as_string=True):
 
-    return adjusted_timestamp
+    device_metadata = experiment['deviceMetadata'] if 'deviceMetadata' in experiment else None
+
+    if device_metadata and isinstance(device_metadata, dict) and device_metadata['timezoneName'] and isinstance(device_metadata['timezoneName'], str):
+        timezone_name = device_metadata['timezoneName']
+    else:
+        print(f"WARNING: No device metadata found for experiment '{experiment.get('_id', 'unknown')}', defaulting to timezone 'Europe/Amsterdam'.")
+        timezone_name = 'Europe/Amsterdam'
+
+    return adjust_timestamp(timestamp, timezone_name, return_as_string=return_as_string)
 
 def format_participant_info(participant):
+
+    def format_participant_timestamp(value):
+
+        adjusted = adjust_timestamp(value, 'Europe/Amsterdam')
+
+        if adjusted is None:
+            return None
+
+        return datetime.fromisoformat(adjusted).isoformat(timespec="minutes")
+
     return {
         "id": participant['_id'],
         "firstname": participant.get('firstname', None),
@@ -240,8 +303,8 @@ def format_participant_info(participant):
         "patientId": participant['patientId'],
         "customId": participant.get('customId', None),
         "studies": participant['studies'],
-        "invitedAt": adjust_timestamp(participant['invitedAt'], 'Europe/Amsterdam', False),
-        "createdAt": adjust_timestamp(participant['createdAt'], 'Europe/Amsterdam', False),
+        "invitedAt": format_participant_timestamp(participant['invitedAt']),
+        "createdAt": format_participant_timestamp(participant['createdAt']),
         "active": participant['status'] == 'Active',
         "consentCount": len(participant['consents']) if 'consents' in participant else 0
     }

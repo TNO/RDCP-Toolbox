@@ -49,7 +49,5 @@ with open('input/gut-health-vezelstudie-enrollment.tsv', "r") as workflow_file:
                 else:
                     print(f"Participant '{email}' already exists in this study")
 
-
-
 print(f"{len(participant_ids)} participants to activate:")
 print(participant_ids)
