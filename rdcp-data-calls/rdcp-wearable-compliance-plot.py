@@ -12,6 +12,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 import rdcp_utils
+import rdcp_script_utils
 
 root_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(root_dir))
@@ -30,8 +31,13 @@ params = [
 
 participant_ids = []
 # participant_ids = [
-#     '6ac60547b4c60f046786aef5'
+#     '6aad201e490da8b6f6323513'
 # ]
+
+user_first_name_in_file_name = input("Do you have participant first names in the file names? (y/N) ").strip().lower() in ['y', 'yes']
+
+if user_first_name_in_file_name == True:
+    participant_dict = rdcp_utils.get_all_participants_as_dict(rdcp_script_utils.get_api_token(), rdcp_script_utils.get_base_url())
 
 if len(participant_ids) > 0:
     print(f"Filtering BYOD JSON files for participant IDs: {', '.join(participant_ids)}")
@@ -158,7 +164,7 @@ for index, (participant_id, param_dict) in enumerate(series.items(), start=1):
                 edgecolors="#1f77b4",
             )
 
-    file = os.path.join(plots_dir, f"{participant_study_dict[participant_id]}_{participant_id}.png")
+    file = os.path.join(plots_dir, f"{participant_study_dict[participant_id]}_{participant_id if not user_first_name_in_file_name else participant_dict[participant_id]['firstname']}.png")
 
     ax.set_yticks(list(y_positions.values()))
     ax.set_yticklabels(params)
